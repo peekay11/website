@@ -85,10 +85,10 @@ Hand-pick `requirements.txt` to have only direct dependencies required by your a
 The easiest way to start with the right project structure is to use `flet create` command:
 
 ```
-flet create myapp
+flet create project-name
 ```
 
-where `myapp` is a target directory.
+where `project-name` is a target directory.
 
 ## How it works
 
@@ -124,50 +124,56 @@ When you run `flet build <target_platform>` command it:
 * Runs `flutter build <target_platform>` command to produce an executable or an install package.
 * Copies build results to `{flet_app_directory}/build/<target_platform>` directory.
 
-## Including optional controls
+## Including Extensions
 
-If your app uses the following controls their packages must be added to a build command:
-
-* Ad controls (`BannerAd` and `InterstitialAd`) implemented in `flet_ads` package.
-* [`Audio`](/docs/controls/audio) control implemented in `flet_audio` package.
-* [`AudioRecorder`](/docs/controls/audiorecorder) control implemented in `flet_audio_recorder` package.
-* [`Flashlight`](/docs/controls/flashlight) control implemented in `flet_flashlight` package.
-* [`Geolocator`](/docs/controls/geolocator) control implemented in `flet_geolocator` package.
-* [`Lottie`](/docs/controls/lottie) control implemented in `flet_lottie` package.
-* [`Map`](/docs/controls/map) control implemented in `flet_map` package.
-* [`PermissionHandler`](/docs/controls/permissionhandler) control implemented in `flet_permission_handler` package.
-* [`Rive`](/docs/controls/rive) control implemented in `flet_rive` package.
-* [`Video`](/docs/controls/video) control implemented in `flet_video` package.
-* [`WebView`](/docs/controls/webview) control implemented in `flet_webview` package.
-
-Use `--include-packages <package_1> <package_2> ...` option to add Flutter packages with optional
-Flet controls or use `tool.flet.flutter.dependencies` section in `pyproject.toml`.
-
-For example, to build your Flet app with `Video` and `Audio` controls add `--include-packages flet_video flet_audio` to your `flet build` command:
-
-```
-flet build apk --include-packages flet_video flet_audio
-```
-
-or the same in `pyproject.toml`:
+If your app uses Flet extensions (third-party packages), simply add them to your project's dependencies so they will be included in the packaged app:
 
 ```toml
-flutter.dependencies = ["flet_video", "flet_audio"]
+dependencies = [
+  "flet-extension",
+  "flet",
+]
 ```
 
-or an alternative syntax with versions:
+If the extension has not been published on PyPi yet, you can reference it from alternative sources:
+
+- Git Repository:
+  ```toml
+  dependencies = [
+    "flet-extension @ git+https://github.com/account/flet-extension.git",
+    "flet",
+  ]
+  ```
+
+
+- Local Package: 
+  ```toml
+  dependencies = [
+    "flet-extension @ file:///path/to/flet-extension",
+    "flet",
+  ]
+  ```
+
+Example of extensions can be found here.
+
+## Flutter Dependencies
+
+Adding a Flutter package can be done in the `pyproject.toml` as follows:
 
 ```toml
+[tool.flet]
+flutter.dependencies = ["package_1", "package_2"]
+
+# OR
+
 [tool.flet.flutter.dependencies]
-flet_video = "1.0.0"
-flet_audio = "2.0.0"
-```
+package_1 = "x.y.z"
+package_2 = "x.y.z"
 
-or with path to the package on your disk:
+# OR
 
-```toml
-[tool.flet.flutter.dependencies.my_package]
-path = "/path/to/my_package"
+[tool.flet.flutter.dependencies.local_package]
+path = "/path/to/local_package"
 ```
 
 ## Icons
@@ -233,7 +239,7 @@ show = true
 
 ## Startup screen
 
-Startup screen is shown while the archive with 3rd-party site packages (Android only) is being unpacked and Python app is starting. Startup screen is shown after boot screen.
+Startup screen is shown while the archive (app.zip) with 3rd-party site packages (Android only) is being unpacked and Python app is starting. Startup screen is shown after boot screen.
 
 To enable startup screen in `pyproject.toml` for all target platforms:
 
@@ -252,31 +258,55 @@ show = true
 
 ## Entry point
 
-By default, `flet build` command assumes `main.py` as the entry point of your Flet application, i.e. the file with `ft.app(main)` at the end. A different entry point could be specified with `--module-name` argument or in `pyproject.toml`:
+The Flet application entry (or starting) point refers to the file that contains the call to `ft.run(target)` (or the deprecated `ft.app(target)`). 
 
-```toml
-[tool.flet]
-app.module = "main"
-```
+By default, Flet assumes this file is named `main.py`. However, if your entry point is different (for example, `start.py`), you can specify it using one of the following methods:
+
+- Through the build command:
+  ```bash
+  flet build linux --module-name start
+  ```
+
+- In `pyproject.toml`:
+  ```toml
+  [tool.flet]
+  app.module = "start"
+
+  # OR
+
+  [tool.flet.app]
+  module = "start"
+  ```
 
 ## Compilation and cleanup
 
-`flet build` command is not compiling app `.py` files into `.pyc` by default which allows you to avoid (or defer?) discovery of any syntax errors in your app and successfully complete the packaging.
+By default, Flet does **not** compile your app files during packaging. This allows the build process to complete even if there are syntax errors, which can be useful for debugging or rapid iteration.
 
-You can enable the compilation and cleanup with the following new options:
+* `compile-app`: compile app's `.py` files
+* `compile-packages`: compile site/installed packages' `.py` files
+* `cleanup-packages`: remove unnecessary package files upon successful compilation
 
-* `--compile-app` - compile app's `.py` files.
-* `--compile-packages` - compile installed packages' `.py` files.
-* `--cleanup-on-compile` - remove unnecessary files upon successful compilation.
+Enable one or more of them as follows:
 
-Configuring compilation in `pyproject.toml`:
+- From the build command as flags:
+  ```bash
+  flet build linux --compile-app --compile-packages --cleanup-packages
+  ```
 
-```toml
-[tool.flet]
-compile.app = true # --compile-app
-compile.packages = true # --compile-packages
-compile.cleanup = true # --cleanup-on-compile
-```
+- In the `pyproject.toml`:
+  ```toml
+  [tool.flet]
+  compile.app = true
+  compile.packages = true
+  compile.cleanup = true
+
+  # OR
+
+  [tool.flet.compile]
+  app = true
+  packages = true
+  cleanup = true
+  ```
 
 ## Permissions
 
@@ -361,103 +391,160 @@ permissions = ["camera", "microphone"]
 
 ## Versioning
 
-You can provide a version information for built executable or package with `--build-number` and `--build-version` arguments. This is the information that is used to distinguish one build/release from another in App Store and Google Play and is shown to the user in about dialogs.
+### Build Number
+An integer identifier (defaults to `1`) used internally to distinguish one build from another. Each new build must have a unique, incrementing number; higher numbers indicate more recent builds. It's value can be set as follows:
 
-`--build-number` - an integer number (defaults to `1`), an identifier used as an internal version number.
-Each build must have a unique identifier to differentiate it from previous builds.
-It is used to determine whether one build is more recent than another, with higher numbers indicating
-more recent build.
+- via Command Line: 
+  ```bash
+  flet build apk --build-number 1
+  ```
 
-`--build-version` - a "x.y.z" string (defaults to `1.0.0`) used as the version number shown to users. For each new
-version of your app, you will provide a version number to differentiate it from previous versions.
+- via `pyproject.toml`:
+  ```toml
+  [tool.flet]
+  build_number = 1
+  ```
 
-Configuring display version and version number in `pyproject.toml`:
+### Build Version 
+A user‑facing version string in `x.y.z` format (defaults to `1.0.0`). Increment this for each new release to differentiate it from previous versions. It's value can be set as follows:
 
-```toml
-[project]
-name = "my_app"
-version = "1.0.0"
-description = "My Flet app"
-authors = [
-  {name = "John Smith", email = "john@email.com"}
-]
-dependencies = ["flet==0.25.0"]
+- via Command Line: 
+  ```bash
+  flet build apk --build-version 1.0.0
+  ```
 
-[tool.flet]
-build_number = 1
-```
+- via `pyproject.toml`:
+  ```toml
+  [project]
+  version = "1.0.0"
 
-## Customizing packaging template
+  # OR
 
-To create a temporary Flutter project `flet build` uses [cookiecutter](https://cookiecutter.readthedocs.io/en/stable/) template stored in https://github.com/flet-dev/flet-build-template repository.
+  [tool.poetry]
+  version = "1.0.0"
+  ```
 
-You can customize that template to suit your specific needs and then use it with `flet build`.
+## Customizing build template
 
-`--template` option can be used to provide the URL to the repository or path to a directory with your own template. Use `gh:` prefix for GitHub repos, e.g. `gh:{my-org}/{my-repo}` or provide a full path to a Git repository, e.g. `https://github.com/{my-org}/{my-repo}.git`.
+By default, `flet build` creates a temporary Flutter project using a [cookiecutter](https://cookiecutter.readthedocs.io/en/stable/) template from the flet-dev/flet-build-template repository. The version of the template used is determined by the [template reference](#template-reference) option, which defaults to the current Flet version.
 
-For Git repositories you can checkout specific branch/tag/commit with `--template-ref` option.
+You can customize this behavior by specifying your own template source, reference, and subdirectory.
 
-`--template-dir` option specifies a relative path to a cookiecutter template in a repository given by `--template` option. When `--template` option is not used, this option specifies path relative to the `<user-directory>/.cookiecutters/flet-build-template`.
+### Template Source
 
-Configuring template in `pyproject.toml`:
+Defines the location of the template to be used. Defaults to `gh:flet-dev/flet-build-template`, the [official Flet template](https://github.com/flet-dev/flet-build-template).
 
-```toml
-[tool.flet.template]
-path = "gh:some-github/repo" # --template
-dir = "" # --template-dir
-ref = "" # --template-ref
-```
+Valid values include:
 
-## Extra args to `flutter build` command
+- A GitHub repository using the `gh:` prefix (e.g., `gh:org/template`)
+- A full Git URL (e.g., `https://github.com/org/template.git`)
+- A local directory path
 
-`--flutter-build-args` option allows passing extra arguments to `flutter build` command called during the build process. The option can be used multiple times.
+It's value can be set in either of the following ways:
 
-For example, if you want to add `--no-tree-shake-icons` option:
+- via Command Line: 
+  ```bash
+  flet build apk --template gh:flet-dev/flet-build-template
+  ```
 
-```
-flet build macos --flutter-build-args=--no-tree-shake-icons
-```
+- via `pyproject.toml`:
+  ```toml
+  [tool.flet.template]
+  url = "gh:flet-dev/flet-build-template"
+  ```
 
-To pass an option with a value:
+### Template Reference
 
-```
-flet build ipa --flutter-build-args=--export-method --flutter-build-args=development
-```
+Defines the branch, tag, or commit to check out from the [template source](#template-source). Defaults to the version of Flet installed.
 
-Configuring Flutter build extra args:
+It's value can be set in either of the following ways:
 
-```toml
-[tool.flet]
-flutter.build_args = [
-    "--some-flutter-arg-1",
-    "--some-flutter-arg-2"
-]
-```
+- via Command Line: 
+  ```bash
+  flet build apk --template-ref main
+  ```
+
+- via `pyproject.toml`:
+  ```toml
+  [tool.flet.template]
+  ref = "main"
+  ```
+
+
+### Template Directory
+
+Defines the relative path to the cookiecutter template. If [template source](#template-source) is set, the path is treated as a subdirectory within its root; otherwise, it is relative to`<user-directory>/.cookiecutters/flet-build-template`.
+
+It's value can be set in either of the following ways:
+
+- via Command Line: 
+  ```bash
+  flet build apk --template gh:org/template --template-dir sub/directory
+  ```
+
+- via `pyproject.toml`:
+  ```toml
+  [tool.flet.template]
+  url = "gh:org/template"
+  dir = "sub/directory"
+  ```
+
+## Additional `flutter build` Arguments
+
+During the `flet build` process, `flutter build` command gets called internally to package your app for the specified platform.
+
+It's value can be set in either of the following ways:
+
+- via Command Line (can be used multiple times): 
+  ```bash
+  flet build ipa --flutter-build-args=--no-tree-shake-icons
+
+  # OR, with value
+
+  flet build ipa --flutter-build-args=--export-method --flutter-build-args=development
+  ```
+
+- via `pyproject.toml`:
+  ```toml
+  [tool.flet]
+  flutter.build_args = [
+    "--no-tree-shake-icons",
+    "--export-method", "development"
+  ]
+
+  # OR
+
+  [tool.flet.flutter]
+  build_args = [
+    "--no-tree-shake-icons",
+    "--export-method", "development"
+  ]
+  ```
 
 ## Verbose logging
 
-`--verbose` or `-vv` option allows to see the output of all commands during `flet build` run.
-We might ask for a detailed log if you need support.
+The `-v` (or `--verbose`) and `-vv` flags enables detailed output from all commands during the flet build process.
+Use `-v` for standard/basic verbose logging, or `-vv` for even more detailed output (higher verbosity level).
+If you need support, we may ask you to share this verbose log.
 
 ## Console output
 
-All Flet apps output to `stdout` and `stderr` (e.g. all `print()` statements or `sys.stdout.write()` calls, Python `logging` library) is now redirected to `console.log` file with a full path to it stored in `FLET_APP_CONSOLE` environment variable.
+All output from Flet apps—such as `print()` statements, `sys.stdout.write()` calls, and messages from the Python logging module—is now redirected to a `console.log` file. The full path to this file is available via the `FLET_APP_CONSOLE` environment variable.
 
-Writes to that file are unbuffered, so you can retrieve a log in your Python program at any moment with a simple:
+The log file is written in an unbuffered manner, allowing you to read it at any point in your Python program using:
 
 ```python
 with open(os.getenv("FLET_APP_CONSOLE"), "r") as f:
-    log = f.read()
+  log = f.read()
 ```
 
-`AlertDialog` or any other control can be used to display the value of `log` variable.
+You can then display the `log` content using an `AlertDialog` or any other Flet control.
 
-When the program is terminated by calling `sys.exit()` with exit code `100` (magic code)
-the entire log will be displayed in a scrollable window.
+If your program calls sys.exit(100), the complete log will automatically be shown in a scrollable window. This is a special “magic” exit code for debugging purposes:
 
 ```python
 import sys
 sys.exit(100)
 ```
 
-Calling `sys.exit()` with any other exit code will terminate (close) the app without displaying a log.
+Calling `sys.exit()` with any other code will terminate the app without displaying the log.

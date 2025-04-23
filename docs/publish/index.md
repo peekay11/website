@@ -5,25 +5,30 @@ slug: /publish
 
 ## Introduction
 
-Flet CLI provides `flet build` command that allows packaging Flet app into a standalone executable or install package for distribution.
+Flet CLI provides [`flet build`](/docs/reference/cli/build) command that allows packaging Flet app into a standalone executable or install package for distribution.
 
-## Platform matrix
+## Platform Matrix
 
-The following matrix shows which OS you should run `flet build` command on in order to build a package for specific platform:
+The table below outlines the operating systems compatible with the `flet build` command for creating packages for various platforms:
 
-| Run on / `flet build` |   `apk/aab`   |   `ipa`   |   `macos`    |   `linux`    |   `windows`    |    `web`    |
-| :----------------: | :-----: | :---------: | :--------: | :--------: | :----------: | :--------: |
-| macOS              |   ✅    |       ✅     |      ✅    |           |              |     ✅     |
-| Windows            |   ✅     |            |            |  ✅ (WSL)  |      ✅      |     ✅     |
-| Linux              |   ✅    |            |            |     ✅     |              |     ✅     |
+| OS / `flet build` Target | `apk/aab` | `ipa` | `macos` | `linux` | `windows` | `web` |
+|:-------------------------:|:---------:|:-----:|:-------:|:-------:|:---------:|:-----:|
+| **macOS**                | ✅        | ✅    | ✅      | ❌      | ❌        | ✅    |
+| **Windows**              | ✅        | ❌    | ❌      | ✅ (via WSL) | ✅    | ✅    |
+| **Linux**                | ✅        | ❌    | ❌      | ✅      | ❌        | ✅    |
+
+**Notes:**
+- **WSL (Windows Subsystem for Linux)** is required for building Linux apps on Windows.
 
 ## Prerequisites
 
 ### Flutter SDK
 
-If the correct version of the Flutter SDK is not found in the `PATH`, it will be automatically installed during the first run when building a Flet app for any platform.
+[Flutter](https://flutter.dev) is required to build Flet apps for any platform. 
 
-Flutter SDK is installed into `$HOME/flutter/{version}` directory.
+If the minimum required version of the Flutter SDK is not already available in the system `PATH`, it will be automatically downloaded and installed (in the `$HOME/flutter/{version}` directory) during the first build process.
+
+<!-- TODO: Add a link to a table containing a map for Flet to min Flutter version required -->
 
 ## Project structure
 
@@ -38,57 +43,49 @@ Flutter SDK is installed into `$HOME/flutter/{version}` directory.
     └── main.py
 ```
 
-`main.py` is the entry point of your Flet application with `ft.app(main)` at the end. A different entry point could be specified with `--module-name` argument.
+- `main.py` is the [entry point](#entry-point) of your Flet application with `ft.run(main)` at the end.
 
-`assets` is an optional directory that contains application assets (images, sound, text and other files required by your app) as well as images used for package icons and splash screens.
+- `assets` is an optional directory that contains application assets (images, sound, text and other files required by your app) as well as images used for package [icons](#icons) and [splash screens](#splash-screen).
 
-If only `icon.png` (or other supported format such as `.bmp`, `.jpg`, `.webp`) is provided it will be used as a source image to generate all icons and splash screens for all platforms. See section below for more information about icons and splashes.
+- `pyproject.toml` serves as the central configuration file for your application. It includes metadata, dependencies, and build settings. At a minimum, the `dependencies` section should specify the `flet` package as a required dependency:
 
-`pyproject.toml` contains the application metadata, lists its dependencies and controls build process. The list of project dependencies should contain at least `flet` package:
+  ```toml title="pyproject.toml"
+  [project]
+  name = "myapp"
+  version = "0.1.0"
+  description = ""
+  readme = "README.md"
+  requires-python = ">=3.9"
+  authors = [
+      { name = "Flet developer", email = "you@example.com" }
+  ]
+  dependencies = [
+    "flet"
+  ]
 
-```toml title="pyproject.toml"
-[project]
-name = "myapp"
-version = "0.1.0"
-description = ""
-readme = "README.md"
-requires-python = ">=3.9"
-authors = [
-    { name = "Flet developer", email = "you@example.com" }
-]
-dependencies = [
-  "flet"
-]
+  [tool.flet]
+  org = "com.mycompany"
+  product = "MyApp"
+  company = "My Company"
+  copyright = "Copyright (C) 2025 by My Company"
 
-[tool.flet]
-org = "com.mycompany"
-product = "MyApp"
-company = "My Company"
-copyright = "Copyright (C) 2025 by My Company"
-
-[tool.flet.app]
-path = "src"
-```
+  [tool.flet.app]
+  path = "src"
+  ```
 
 :::note
-Though `requirements.txt` can also be used to list app requirements Flet recommends using `pyproject.toml` for new projects. If both `pyproject.toml` and `requirements.txt` exist the latter will be ignored.
+We recommend using `pyproject.toml` to define app requirements for new projects instead of `requirements.txt`. If both files are present, `flet build` will ignore `requirements.txt`.
+
+Avoid using `pip freeze > requirements.txt` to generate dependencies, as it may include packages incompatible with the target platform. Instead, manually specify only the direct dependencies required by your app, including `flet`.
 :::
 
-:::caution No pip freeze
-Do not use `pip freeze > requirements.txt` command to create `requirements.txt` for the app that
-will be running on mobile. As you run `pip freeze` command on a desktop `requirements.txt` will have
-dependencies that are not intended to work on a mobile device, such as `watchdog`.
+To quickly set up a project with the correct structure, use the `flet create` command:
 
-Hand-pick `requirements.txt` to have only direct dependencies required by your app, plus `flet`. 
-:::
-
-The easiest way to start with the right project structure is to use `flet create` command:
-
-```
-flet create project-name
+```bash
+flet create <project-name>
 ```
 
-where `project-name` is a target directory.
+Where `<project-name>` is the name for your project directory.
 
 ## How it works
 
@@ -176,36 +173,86 @@ package_2 = "x.y.z"
 path = "/path/to/local_package"
 ```
 
+## Output Directory
+
+By default, the build output is saved in the `<python_app_directory>/build/<target_platform>` directory. 
+
+You can specify a custom output directory using the `--output` option in the `flet build` command:
+
+- via Command Line:
+  ```bash
+  flet build <target_platform> --output <path-to-output-dir>
+  ```
+
+- via `pyproject.toml`:  # fixme: build.py doesnt have this
+  ```toml
+  [tool.flet]
+  output = "<path-to-output-dir>"
+  ```
+
 ## Icons
 
-You can customize app icons for all platforms (excluding Linux) with images in `assets` directory of your Flet app.
+You can customize app icons for all platforms (except Linux) using image files placed in the `assets` directory of your Flet app.
 
-If only `icon.png` (or other supported format such as `.bmp`, `.jpg`, `.webp`) is provided it will be used as a source image to generate all icons.
+If a platform-specific icon (as in the table below) is not provided, `icon.png` (or any supported format like `.bmp`, `.jpg`, or `.webp`) will be used as fallback. For the iOS platform, transparency (alpha channel) will be automatically removed, if present.
 
-* **iOS** - `icon_ios.png` (or any supported image format). Recommended minimum image size is 1024 px. Image should not be transparent (have alpha channel). Defaults to `icon.png` with alpha-channel automatically removed.
-* **Android** - `icon_android.png` (or any supported image format). Recommended minimum image size is 192 px. Defaults to `icon.png`.
-* **Web** - `icon_web.png` (or any supported image format). Recommended minimum image size is 512 px. Defaults to `icon.png`.
-* **Windows** - `icon_windows.png` (or any supported image format). ICO will be produced of 256 px size. Defaults to `icon.png`. If `icon_windows.ico` file is provided it will be just copied to `windows/runner/resources/app_icon.ico` unmodified.
-* **macOS** - `icon_macos.png` (or any supported image format). Recommended minimum image size is 1024 px. Defaults to `icon.png`.
+| Platform | File Name                            | Recommended Size     | Notes                                                                 |
+|----------|---------------------------------------|----------------------|-----------------------------------------------------------------------|
+| iOS      | `icon_ios.png`                        | ≥ 1024×1024 px       | Transparency (alpha channel) is not supported and will be automatically removed if present. |
+| Android  | `icon_android.png`                    | ≥ 192×192 px         |                                                                       |
+| Web      | `icon_web.png`                        | ≥ 512×512 px         |                                                                       |
+| Windows  | `icon_windows.ico` or `icon_windows.png` | 256×256 px           | `.png` file will be interally converted to a 256×256 px `.ico` icon.           |
+| macOS    | `icon_macos.png`                      | ≥ 1024×1024 px       |                                                                       |
+
 
 ## Splash screen
 
-You can customize splash screens for iOS, Android and web applications with images in `assets` directory of your Flet app.
+You can customize splash screens for iOS, Android, and Web platforms by placing image files in the `assets` directory of your Flet app.
 
-If only `splash.png` or `icon.png` (or other supported format such as `.bmp`, `.jpg`, `.webp`) is provided it will be used as a source image to generate all splash screen.
+If platform-specific splash images are not provided, Flet will fall back to `splash.png`. If that is also missing, it will use `icon.png` or any supported format such as `.bmp`, `.jpg`, or `.webp`.
 
-* **iOS (light)** - `splash_ios.png` (or any supported image format). Defaults to `splash.png` and then `icon.png`.
-* **iOS (dark)** - `splash_dark_ios.png` (or any supported image format). Defaults to light iOS splash, then to `splash_dark.png`, then to `splash.png` and then `icon.png`.
-* **Android (light)** - `splash_android.png` (or any supported image format). Defaults to `splash.png` and then `icon.png`.
-* **Android (dark)** - `splash_dark_android.png` (or any supported image format).  Defaults to light Android splash, then to `splash_dark.png`, then to `splash.png` and then `icon.png`.
-* **Web (light)** - `splash_web.png` (or any supported image format). Defaults to `splash.png` and then `icon.png`.
-* **Web (dark)** - `splash_dark_web.png` (or any supported image format). Defaults to light web splash, then `splash_dark.png`, then to `splash.png` and then `icon.png`.
+### Platform-Specific Splash Images
 
-`--splash-color` option specifies background color for a splash screen in light mode. Defaults to `#ffffff`.
+| Platform | Light Mode File         | Dark Mode File              | Fallback Order                                                                 |
+|----------|--------------------------|------------------------------|--------------------------------------------------------------------------------|
+| iOS      | `splash_ios.png`         | `splash_dark_ios.png`        | → Light splash → `splash_dark.png` → `splash.png` → `icon.png`                |
+| Android  | `splash_android.png`     | `splash_dark_android.png`    | → Light splash → `splash_dark.png` → `splash.png` → `icon.png`                |
+| Web      | `splash_web.png`         | `splash_dark_web.png`        | → Light splash → `splash_dark.png` → `splash.png` → `icon.png`                |
 
-`--splash-dark-color` option specifies background color for a splash screen in dark mode. Defaults to `#333333`.
+### Splash Background Colors
 
-Configuring splash settings in `pyproject.toml`:
+You can customize splash background colors using the following options:
+
+- **Splash Color:** Background color for light mode splash screens (defaults to `#ffffff`)
+
+
+
+
+- **Splash Dark Color:** Background color for dark mode splash screens (defaults to `#333333`)
+
+  - via Command Line:
+    ```bash
+    # Light Color
+    flet build <target_platform> --splash-color #ffffff
+
+    # Dark Color
+    flet build <target_platform> --splash-dark-color #333333
+    ```
+
+  - via `pyproject.toml`:
+    ```toml
+    [tool.flet]
+    splash.color = "#ffffff"
+
+    # OR
+
+    [tool.flet.splash]
+    color = "#ffffff"
+    ```
+
+### Configuration via `pyproject.toml`
+
+You can also configure splash settings in your `pyproject.toml`:
 
 ```toml
 [tool.flet.splash]
@@ -258,24 +305,24 @@ show = true
 
 ## Entry point
 
-The Flet application entry (or starting) point refers to the file that contains the call to `ft.run(target)` (or the deprecated `ft.app(target)`). 
+The Flet application entry (or starting) point refers to the file that contains the call to `ft.run(target)`. 
 
 By default, Flet assumes this file is named `main.py`. However, if your entry point is different (for example, `start.py`), you can specify it using one of the following methods:
 
-- Through the build command:
+- via Command Line:
   ```bash
-  flet build linux --module-name start
+  flet build <target_platform> --module-name start.py
   ```
 
-- In `pyproject.toml`:
+- via `pyproject.toml`:
   ```toml
   [tool.flet]
-  app.module = "start"
+  app.module = "start.py"
 
   # OR
 
   [tool.flet.app]
-  module = "start"
+  module = "start.py"
   ```
 
 ## Compilation and cleanup
@@ -497,11 +544,11 @@ It's value can be set in either of the following ways:
 
 - via Command Line (can be used multiple times): 
   ```bash
-  flet build ipa --flutter-build-args=--no-tree-shake-icons
+  flet build <target_platform> --flutter-build-args=--no-tree-shake-icons
 
   # OR, with value
 
-  flet build ipa --flutter-build-args=--export-method --flutter-build-args=development
+  flet build <target_platform> --flutter-build-args=--export-method --flutter-build-args=development
   ```
 
 - via `pyproject.toml`:

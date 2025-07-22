@@ -17,7 +17,7 @@ const features = [
     description: (
       <>
         An internal tool or a dashboard for your team, weekend project, data entry form, kiosk app or high-fidelity prototype
-        - Flet is an ideal framework to quickly hack a great-looking interactive apps to serve a group of users.
+        - Flet is an ideal framework to quickly hack together a great-looking interactive app to serve a group of users.
       </>
     ),
   },
@@ -27,7 +27,7 @@ const features = [
     description: (
       <>
         No more complex architecture with JavaScript frontend, REST API backend, database, cache, etc.
-        With Flet you just write a monolith stateful app in Python only and get multi-user, realtime Single-Page Application (SPA).
+        With Flet you just write a monolithic stateful app in Python and get a multi-user, realtime Single-Page Application (SPA).
       </>
     ),
   },
@@ -36,8 +36,8 @@ const features = [
     imageUrl: 'img/pages/home/feature-battery.svg',
     description: (
       <>
-        To start developing with Flet, you just need your favorite IDE or text editor.
-        No SDKs, no thousands of dependencies, no complex tooling - Flet has built-in web server with assets hosting and desktop clients.
+        To start developing with Flet, all you need is your favorite IDE or text editor.
+        No SDKs or thousands of dependencies, no complex tooling - Flet has a built-in web server with assets hosting and desktop clients.
       </>
     ),
   },
@@ -47,16 +47,16 @@ const features = [
     description: (
       <>
         Flet UI is built with <a href="https://flutter.dev">Flutter</a>, so your app looks professional and can be delivered to any platform.
-        Flet simplifies Flutter model by combining smaller "widgets" into ready-to-use "controls" with imperative programming model.
+        Flet simplifies Flutter's model by combining smaller "widgets" into ready-to-use "controls" with an imperative programming model.
       </>
     ),
   },
   {
-    title: <>Speaks your language</>,
-    imageUrl: 'img/pages/home/feature-language.svg',
+    title: <>Build your entire app in one language</>,
+    imageUrl: 'img/pages/home/feature-python.svg',
     description: (
       <>
-        Flet is language-agnostic, so anyone on your team could develop Flet apps in their favorite language. Python is already supported, Go, C# and others are <a href="/roadmap">coming next</a>.
+        Leverage your mastery of a single, well-loved langauge, Python. No need to rely on an incomplete understanding of the features of several other languages like Kotlin, Swift, javascript, etc.
       </>
     ),
   },

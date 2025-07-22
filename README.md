@@ -2,7 +2,7 @@
 
 This website is built using [Docusaurus 2](https://v2.docusaurus.io/), a modern static website generator.
 
-View the live site at [https://flet.devhttps://docs.flet-docs.pages.dev/](https://flet.devhttps://docs.flet-docs.pages.dev/).
+View the live site at [https://flet.dev](https://flet.dev).
 
 ### Installation
 
